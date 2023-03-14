@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "130453368109",
+    "project_id": "magisterkasensory",
+    "storage_bucket": "magisterkasensory.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:130453368109:android:19150a5a2919a0577337a4",
+        "android_client_info": {
+          "package_name": "com.example.magisterka"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "130453368109-pgl0l6j58fk7be2l9e136qj4rkt74eei.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvFaWnstcwcH_r-yOQiY0eDlyukw-19HQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "130453368109-pgl0l6j58fk7be2l9e136qj4rkt74eei.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
