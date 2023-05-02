@@ -4,13 +4,19 @@ import static android.content.ContentValues.TAG;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -31,6 +37,8 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
 
     private SensorManager sensorManager;
+    private LocationManager locationManager;
+
     private Sensor gyroSensor;
     private Sensor accelSensor;
 
@@ -44,6 +52,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private Map<String, Object> gyroscopeData;
     private Map<String, Object> accelerometerData;
+    private Map<String, Object> gpsData;
 
     FirebaseFirestore db;
 
@@ -63,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         buttonLift.setOnClickListener(this);
         buttonFlat.setOnClickListener(this);
 
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         accelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -142,7 +152,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                                                     @Override
                                                     public void onSuccess(DocumentReference documentReference) {
-                                                        showSimpleToast("Pomiar dodany do bazy danych.");
+                                                        db.collection("pomiary").document(docId).collection("GPS")
+                                                                .add(gpsData)
+                                                                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                                                                    @Override
+                                                                    public void onSuccess(DocumentReference documentReference) {
+                                                                        showSimpleToast("Pomiar dodany do bazy danych.");
+                                                                    }
+                                                                })
+                                                                .addOnFailureListener(new OnFailureListener() {
+                                                                    @Override
+                                                                    public void onFailure(@NonNull Exception e) {
+                                                                        showSimpleToast("Pomiar NIE dodany do bazy danych.");
+                                                                    }
+                                                                });
                                                     }
                                                 })
                                                 .addOnFailureListener(new OnFailureListener() {
@@ -180,7 +203,40 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private void startCollectingData() {
         gyroscopeData = new HashMap<>();
         accelerometerData = new HashMap<>();
+        gpsData = new HashMap<>();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+        }
     }
+
+    LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            if(collectingData) {
+                Map<String, Double> values = new HashMap<>();
+                Date currentTime = Calendar.getInstance().getTime();
+
+                double latitude = location.getLatitude();
+                double longitude = location.getLongitude();
+                double altitude = location.getAltitude();
+
+                values.put("latitude", latitude);
+                values.put("longitude", longitude);
+                values.put("altitude", altitude);
+
+                gpsData.put(currentTime.toString(), values);
+            }
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+        @Override
+        public void onProviderEnabled(String provider) {}
+
+        @Override
+        public void onProviderDisabled(String provider) {}
+    };
 
     @Override
     protected void onResume() {
@@ -197,9 +253,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        Date currentTime = Calendar.getInstance().getTime();
+
 
         if(collectingData){
+            Date currentTime = Calendar.getInstance().getTime();
             if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
                 Map<String, Object> values = new HashMap<>();
                 values.put("X", event.values[0]);
