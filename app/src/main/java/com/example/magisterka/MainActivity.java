@@ -212,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if(collectingData) {
+        if(collectingData && location != null) {
             Map<String, Double> values = new HashMap<>();
             Date currentTime = Calendar.getInstance().getTime();
 
