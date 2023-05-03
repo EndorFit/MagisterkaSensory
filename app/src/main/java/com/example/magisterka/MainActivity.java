@@ -4,6 +4,7 @@ import static android.content.ContentValues.TAG;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
@@ -36,6 +37,7 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
 
+    private static final int REQUEST_CODE_LOCATION_PERMISSION = 100;
     private SensorManager sensorManager;
     private LocationManager locationManager;
 
@@ -90,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             case R.id.buttonStairs:
                 buttonFlat.setEnabled(!buttonFlat.isEnabled());
                 buttonLift.setEnabled(!buttonLift.isEnabled());
-                if(collectingData){
+                if (collectingData) {
                     buttonStairs.setText("Stop");
                     textViewActivity.setText("Schody");
                     startCollectingData();
@@ -103,7 +105,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             case R.id.buttonLift:
                 buttonFlat.setEnabled(!buttonFlat.isEnabled());
                 buttonStairs.setEnabled(!buttonStairs.isEnabled());
-                if(collectingData){
+                if (collectingData) {
                     buttonLift.setText("Stop");
                     textViewActivity.setText("Winda");
                     startCollectingData();
@@ -116,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             case R.id.buttonFlat:
                 buttonStairs.setEnabled(!buttonStairs.isEnabled());
                 buttonLift.setEnabled(!buttonLift.isEnabled());
-                if(collectingData){
+                if (collectingData) {
                     buttonFlat.setText("Stop");
                     textViewActivity.setText("Płasko");
                     startCollectingData();
@@ -204,9 +206,28 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         gyroscopeData = new HashMap<>();
         accelerometerData = new HashMap<>();
         gpsData = new HashMap<>();
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE_LOCATION_PERMISSION);
         }
+
+        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        if(collectingData) {
+            Map<String, Double> values = new HashMap<>();
+            Date currentTime = Calendar.getInstance().getTime();
+
+            double latitude = location.getLatitude();
+            double longitude = location.getLongitude();
+            double altitude = location.getAltitude();
+
+            values.put("latitude", latitude);
+            values.put("longitude", longitude);
+            values.put("altitude", altitude);
+
+            gpsData.put(currentTime.toString(), values);
+        }
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, locationListener);// Do something with location
     }
 
     LocationListener locationListener = new LocationListener() {
@@ -238,11 +259,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         public void onProviderDisabled(String provider) {}
     };
 
+
     @Override
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, accelSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, gyroSensor, 1000000);
+
+        sensorManager.registerListener(this, accelSensor, 1000000);
     }
 
     @Override
