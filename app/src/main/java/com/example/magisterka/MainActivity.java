@@ -1,8 +1,5 @@
 package com.example.magisterka;
 
-import static android.content.ContentValues.TAG;
-
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -19,23 +16,22 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.Calendar;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, View.OnTouchListener {
 
     private static final int REQUEST_CODE_LOCATION_PERMISSION = 100;
     private SensorManager sensorManager;
@@ -58,11 +54,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     FirebaseFirestore db;
 
-    @SuppressLint("MissingInflatedId")
+    private long touched = 0;
+
+    @SuppressLint({"MissingInflatedId", "ClickableViewAccessibility"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         textViewActivity = findViewById(R.id.textViewActivity);
 
@@ -82,10 +82,41 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         db = FirebaseFirestore.getInstance();
 
         collectingData = false;
+
+        buttonStairs.setOnTouchListener(this);
+        buttonLift.setOnTouchListener(this);
+        buttonFlat.setOnTouchListener(this);
+
     }
 
     @Override
     public void onClick(View v) {
+        if(!collectingData){
+            performButtonActions(v);
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    @Override
+    public boolean onTouch(View view, MotionEvent motionEvent) {
+        if(collectingData){
+            if(motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+                touched = (Long) System.currentTimeMillis();
+            }
+            else if(motionEvent.getAction() == MotionEvent.ACTION_UP){
+                if(((Long) System.currentTimeMillis() - touched) > 1500){
+                    touched = 0;
+                    performButtonActions(view);
+                    return true;
+                }
+                touched = 0;
+            }
+        }
+        return false;
+    }
+
+    @SuppressLint({"NonConstantResourceId", "SetTextI18n"})
+    public void performButtonActions(View v){
         collectingData = !collectingData;
 
         switch (v.getId()) {
@@ -131,67 +162,58 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-    private void stopCollectingData(String activity) {
+    private void startCollectingData() {
 
+        gyroscopeData = new LinkedHashMap<>();
+        accelerometerData = new LinkedHashMap<>();
+        gpsData = new LinkedHashMap<>();
+
+
+        while(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE_LOCATION_PERMISSION);
+        }
+
+        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        if(collectingData && location != null) {
+            Map<String, Double> values = new HashMap<>();
+
+            double latitude = location.getLatitude();
+            double longitude = location.getLongitude();
+            double altitude = location.getAltitude();
+
+            values.put("latitude", latitude);
+            values.put("longitude", longitude);
+            values.put("altitude", altitude);
+
+            gpsData.put(getCurrentTimeStamp(), values);
+        }
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500, 0, locationListener);// Do something with location
+    }
+
+    private void stopCollectingData(String activity) {
         Map<String, Object> doc = new HashMap<>();
         doc.put("Aktywnosc", activity);
 
         // Add a new document with a generated ID
         db.collection("pomiary")
                 .add(doc)
-                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                    @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        String docId = documentReference.getId();
-                        Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
-                        db.collection("pomiary").document(docId).collection("Żyroskop")
-                                .add(gyroscopeData)
-                                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                                    @Override
-                                    public void onSuccess(DocumentReference documentReference) {
-                                        db.collection("pomiary").document(docId).collection("Akcelerometr")
-                                                .add(accelerometerData)
-                                                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                                                    @Override
-                                                    public void onSuccess(DocumentReference documentReference) {
-                                                        db.collection("pomiary").document(docId).collection("GPS")
-                                                                .add(gpsData)
-                                                                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                                                                    @Override
-                                                                    public void onSuccess(DocumentReference documentReference) {
-                                                                        showSimpleToast("Pomiar dodany do bazy danych.");
-                                                                    }
-                                                                })
-                                                                .addOnFailureListener(new OnFailureListener() {
-                                                                    @Override
-                                                                    public void onFailure(@NonNull Exception e) {
-                                                                        showSimpleToast("Pomiar NIE dodany do bazy danych.");
-                                                                    }
-                                                                });
-                                                    }
-                                                })
-                                                .addOnFailureListener(new OnFailureListener() {
-                                                    @Override
-                                                    public void onFailure(@NonNull Exception e) {
-                                                        showSimpleToast("Pomiar NIE dodany do bazy danych.");
-                                                    }
-                                                });
-                                    }
-                                })
-                                .addOnFailureListener(new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        showSimpleToast("Pomiar NIE dodany do bazy danych.");
-                                    }
-                                });
-                    }
+                .addOnSuccessListener(documentReference -> {
+                    String docId = documentReference.getId();
+                    db.collection("pomiary").document(docId).collection("Żyroskop")
+                            .add(gyroscopeData)
+                            .addOnSuccessListener(documentReference12 -> db.collection("pomiary")
+                                    .document(docId).collection("Akcelerometr")
+                                    .add(accelerometerData)
+                                    .addOnSuccessListener(documentReference1 -> db.collection("pomiary")
+                                            .document(docId).collection("GPS")
+                                            .add(gpsData)
+                                            .addOnSuccessListener(documentReference11 -> showSimpleToast("Pomiar dodany do bazy danych."))
+                                            .addOnFailureListener(e -> showSimpleToast("Pomiar NIE dodany do bazy danych.")))
+                                    .addOnFailureListener(e -> showSimpleToast("Pomiar NIE dodany do bazy danych.")))
+                            .addOnFailureListener(e -> showSimpleToast("Pomiar NIE dodany do bazy danych."));
                 })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        showSimpleToast("Pomiar NIE dodany do bazy danych.");
-                    }
-                });
+                .addOnFailureListener(e -> showSimpleToast("Pomiar NIE dodany do bazy danych."));
     }
 
     private void showSimpleToast(String text) {
@@ -202,32 +224,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         toast.show();
     }
 
-    private void startCollectingData() {
-        gyroscopeData = new HashMap<>();
-        accelerometerData = new HashMap<>();
-        gpsData = new HashMap<>();
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE_LOCATION_PERMISSION);
-        }
-
-        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if(collectingData && location != null) {
-            Map<String, Double> values = new HashMap<>();
-            Date currentTime = Calendar.getInstance().getTime();
-
-            double latitude = location.getLatitude();
-            double longitude = location.getLongitude();
-            double altitude = location.getAltitude();
-
-            values.put("latitude", latitude);
-            values.put("longitude", longitude);
-            values.put("altitude", altitude);
-
-            gpsData.put(currentTime.toString(), values);
-        }
-
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, locationListener);// Do something with location
+    @SuppressLint("SimpleDateFormat")
+    public String getCurrentTimeStamp() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
     }
 
     LocationListener locationListener = new LocationListener() {
@@ -235,7 +234,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         public void onLocationChanged(Location location) {
             if(collectingData) {
                 Map<String, Double> values = new HashMap<>();
-                Date currentTime = Calendar.getInstance().getTime();
 
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
@@ -245,7 +243,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 values.put("longitude", longitude);
                 values.put("altitude", altitude);
 
-                gpsData.put(currentTime.toString(), values);
+                gpsData.put(getCurrentTimeStamp(),values);
             }
         }
 
@@ -263,9 +261,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener(this, gyroSensor, 1000000);
+        sensorManager.registerListener(this, gyroSensor, 500000);
 
-        sensorManager.registerListener(this, accelSensor, 1000000);
+        sensorManager.registerListener(this, accelSensor,500000);
     }
 
     @Override
@@ -276,27 +274,25 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-
-
         if(collectingData){
-            Date currentTime = Calendar.getInstance().getTime();
             if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+
                 Map<String, Object> values = new HashMap<>();
                 values.put("X", event.values[0]);
                 values.put("Y", event.values[1]);
                 values.put("Z", event.values[2]);
-                gyroscopeData.put(currentTime.toString(), values);
+
+                gyroscopeData.put(getCurrentTimeStamp(),values);
             }
             if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
                 Map<String, Object> values = new HashMap<>();
                 values.put("X", event.values[0]);
                 values.put("Y", event.values[1]);
                 values.put("Z", event.values[2]);
-                accelerometerData.put(currentTime.toString(), values);
+
+                accelerometerData.put(getCurrentTimeStamp(),values);
             }
         }
-
-
     }
 
     @Override
