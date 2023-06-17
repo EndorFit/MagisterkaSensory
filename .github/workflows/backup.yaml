@@ -3,7 +3,6 @@ name: Backup Firestore
 on:
   schedule:
   - cron: '0 0 * * *'
-    displayName: Daily midnight build
 
 env:
   PROJECT_ID: magisterkasensory
