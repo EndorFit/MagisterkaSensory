@@ -1,5 +1,6 @@
 package com.example.magisterka;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -7,6 +8,7 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -130,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 } else {
                     buttonStairs.setText("Schody");
                     textViewActivity.setText("");
-                    stopCollectingData("schody");
+                    showConfirmationDialog("schody");
                 }
                 break;
             case R.id.buttonLift:
@@ -143,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 } else {
                     buttonLift.setText("Winda");
                     textViewActivity.setText("");
-                    stopCollectingData("winda");
+                    showConfirmationDialog("winda");
                 }
                 break;
             case R.id.buttonFlat:
@@ -156,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 } else {
                     buttonFlat.setText("Płasko");
                     textViewActivity.setText("");
-                    stopCollectingData("płasko");
+                    showConfirmationDialog("płasko");
                 }
                 break;
         }
@@ -214,6 +216,30 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             .addOnFailureListener(e -> showSimpleToast("Pomiar NIE dodany do bazy danych."));
                 })
                 .addOnFailureListener(e -> showSimpleToast("Pomiar NIE dodany do bazy danych."));
+    }
+
+    private void showConfirmationDialog(String activity) {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setTitle("Potwierdzenie");
+        alertDialogBuilder.setMessage("Czy na pewno chcesz zapisać?");
+        alertDialogBuilder.setPositiveButton("Tak", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // Obsługa kliknięcia przycisku "Tak"
+                stopCollectingData(activity);
+                dialog.dismiss();
+            }
+        });
+        alertDialogBuilder.setNegativeButton("Nie", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // Obsługa kliknięcia przycisku "Nie"
+                dialog.dismiss();
+            }
+        });
+
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
     }
 
     private void showSimpleToast(String text) {
