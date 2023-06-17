@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     Button buttonStairs;
     Button buttonLift;
     Button buttonFlat;
+    Button buttonRamp;
 
     private boolean collectingData;
 
@@ -71,10 +72,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         buttonStairs = findViewById(R.id.buttonStairs);
         buttonLift = findViewById(R.id.buttonLift);
         buttonFlat = findViewById(R.id.buttonFlat);
+        buttonRamp = findViewById(R.id.buttonRamp);
 
         buttonStairs.setOnClickListener(this);
         buttonLift.setOnClickListener(this);
         buttonFlat.setOnClickListener(this);
+        buttonRamp.setOnClickListener(this);
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -88,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         buttonStairs.setOnTouchListener(this);
         buttonLift.setOnTouchListener(this);
         buttonFlat.setOnTouchListener(this);
-
+        buttonRamp.setOnTouchListener(this);
     }
 
     @Override
@@ -125,6 +128,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             case R.id.buttonStairs:
                 buttonFlat.setEnabled(!buttonFlat.isEnabled());
                 buttonLift.setEnabled(!buttonLift.isEnabled());
+                buttonRamp.setEnabled(!buttonRamp.isEnabled());
                 if (collectingData) {
                     buttonStairs.setText("Stop");
                     textViewActivity.setText("Schody");
@@ -138,6 +142,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             case R.id.buttonLift:
                 buttonFlat.setEnabled(!buttonFlat.isEnabled());
                 buttonStairs.setEnabled(!buttonStairs.isEnabled());
+                buttonRamp.setEnabled(!buttonRamp.isEnabled());
                 if (collectingData) {
                     buttonLift.setText("Stop");
                     textViewActivity.setText("Winda");
@@ -151,6 +156,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             case R.id.buttonFlat:
                 buttonStairs.setEnabled(!buttonStairs.isEnabled());
                 buttonLift.setEnabled(!buttonLift.isEnabled());
+                buttonRamp.setEnabled(!buttonRamp.isEnabled());
                 if (collectingData) {
                     buttonFlat.setText("Stop");
                     textViewActivity.setText("Płasko");
@@ -159,6 +165,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     buttonFlat.setText("Płasko");
                     textViewActivity.setText("");
                     showConfirmationDialog("płasko");
+                }
+                break;
+            case R.id.buttonRamp:
+                buttonStairs.setEnabled(!buttonStairs.isEnabled());
+                buttonLift.setEnabled(!buttonLift.isEnabled());
+                buttonFlat.setEnabled(!buttonFlat.isEnabled());
+                if (collectingData) {
+                    buttonRamp.setText("Stop");
+                    textViewActivity.setText("Podjazd");
+                    startCollectingData();
+                } else {
+                    buttonRamp.setText("Podjazd");
+                    textViewActivity.setText("");
+                    showConfirmationDialog("podjazd");
                 }
                 break;
         }
