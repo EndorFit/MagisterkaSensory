@@ -218,16 +218,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         doc.put("Aktywnosc", activity);
 
         // Add a new document with a generated ID
-        db.collection("pomiary")
+        db.collection("pomiaryWstepne")
                 .add(doc)
                 .addOnSuccessListener(documentReference -> {
                     String docId = documentReference.getId();
-                    db.collection("pomiary").document(docId).collection("Żyroskop")
+                    db.collection("pomiaryWstepne").document(docId).collection("Żyroskop")
                             .add(gyroscopeData)
-                            .addOnSuccessListener(documentReference12 -> db.collection("pomiary")
+                            .addOnSuccessListener(documentReference12 -> db.collection("pomiaryWstepne")
                                     .document(docId).collection("Akcelerometr")
                                     .add(accelerometerData)
-                                    .addOnSuccessListener(documentReference1 -> db.collection("pomiary")
+                                    .addOnSuccessListener(documentReference1 -> db.collection("pomiaryWstepne")
                                             .document(docId).collection("GPS")
                                             .add(gpsData)
                                             .addOnSuccessListener(documentReference11 -> showSimpleToast("Pomiar dodany do bazy danych."))
