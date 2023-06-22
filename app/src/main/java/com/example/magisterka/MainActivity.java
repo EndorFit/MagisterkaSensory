@@ -59,6 +59,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private long touched = 0;
 
+    private long eventGyro = 0;
+    private long eventAccel = 0;
+
     @SuppressLint({"MissingInflatedId", "ClickableViewAccessibility"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,12 +188,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     private void startCollectingData() {
-
-        sensorManager.unregisterListener(this);
-        sensorManager.registerListener(this, gyroSensor, 500000);
-
-        sensorManager.registerListener(this, accelSensor,500000);
-
 
         gyroscopeData = new LinkedHashMap<>();
         accelerometerData = new LinkedHashMap<>();
@@ -326,23 +323,32 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+
+
         if(collectingData){
             if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
 
-                Map<String, Object> values = new HashMap<>();
-                values.put("X", event.values[0]);
-                values.put("Y", event.values[1]);
-                values.put("Z", event.values[2]);
+                if(((Long) System.currentTimeMillis() - eventGyro) > 500){
+                    eventGyro = (Long) System.currentTimeMillis();
+                    Map<String, Object> values = new HashMap<>();
+                    values.put("X", event.values[0]);
+                    values.put("Y", event.values[1]);
+                    values.put("Z", event.values[2]);
 
-                gyroscopeData.put(getCurrentTimeStamp(),values);
+                    gyroscopeData.put(getCurrentTimeStamp(),values);
+                }
             }
             if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-                Map<String, Object> values = new HashMap<>();
-                values.put("X", event.values[0]);
-                values.put("Y", event.values[1]);
-                values.put("Z", event.values[2]);
 
-                accelerometerData.put(getCurrentTimeStamp(),values);
+                if(((Long) System.currentTimeMillis() - eventAccel) > 500) {
+                    eventAccel = (Long) System.currentTimeMillis();
+                    Map<String, Object> values = new HashMap<>();
+                    values.put("X", event.values[0]);
+                    values.put("Y", event.values[1]);
+                    values.put("Z", event.values[2]);
+
+                    accelerometerData.put(getCurrentTimeStamp(), values);
+                }
             }
         }
     }
