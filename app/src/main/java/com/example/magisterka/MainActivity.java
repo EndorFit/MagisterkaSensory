@@ -186,6 +186,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private void startCollectingData() {
 
+        sensorManager.unregisterListener(this);
+        sensorManager.registerListener(this, gyroSensor, 500000);
+
+        sensorManager.registerListener(this, accelSensor,500000);
+
+
         gyroscopeData = new LinkedHashMap<>();
         accelerometerData = new LinkedHashMap<>();
         gpsData = new LinkedHashMap<>();
@@ -210,7 +216,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             gpsData.put(getCurrentTimeStamp(), values);
         }
 
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500, 0, locationListener);// Do something with location
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 250, 0, locationListener);// Do something with location
     }
 
     private void stopCollectingData(String activity) {
