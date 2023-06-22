@@ -332,7 +332,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if(collectingData){
             if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
 
-                if(((Long) System.currentTimeMillis() - eventGyro) > 499){
+                if(((Long) System.currentTimeMillis() - eventGyro) > 350){
                     eventGyro = (Long) System.currentTimeMillis();
                     Map<String, Object> values = new HashMap<>();
                     values.put("X", event.values[0]);
@@ -344,7 +344,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
             if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
-                if(((Long) System.currentTimeMillis() - eventAccel) > 499) {
+                if(((Long) System.currentTimeMillis() - eventAccel) > 350) {
                     eventAccel = (Long) System.currentTimeMillis();
                     Map<String, Object> values = new HashMap<>();
                     values.put("X", event.values[0]);
